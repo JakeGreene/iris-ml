@@ -28,10 +28,12 @@ object Main {
      * Example:
      * 5.1,3.5,1.4,0.2,Iris-setosa
      */
-    val irisData = sc.textFile("src/main/resources/iris.data").flatMap(_.split("\n").toList.map(_.split(",")).collect {
-      case Array(sepalLength, sepalWidth, petaLength, petalWidth, irisType) =>
-        (Vectors.dense(sepalLength.toDouble, sepalWidth.toDouble, petaLength.toDouble, petalWidth.toDouble), irisType)
-    })
+    val irisData = sc.textFile("src/main/resources/iris.data").flatMap { text =>
+      text.split("\n").toList.map(_.split(",")).collect {
+        case Array(sepalLength, sepalWidth, petaLength, petalWidth, irisType) =>
+          (Vectors.dense(sepalLength.toDouble, sepalWidth.toDouble, petaLength.toDouble, petalWidth.toDouble), irisType)
+      }
+    }
     val irisColumnName = "iris-type"
     // The ML pipeline requires that the features used for learning are in a vector titled "features"
     val irisDataFrame = sqlContext.createDataFrame(irisData).toDF("features", irisColumnName)
@@ -48,7 +50,8 @@ object Main {
      *  in order to work with a classifier. e.g. "Iris-setosa" might become 1.0
      *  
      *  RandomForestClassifier:
-     *  A multiclass classifier using a collection of decision trees.
+     *  A multiclass classifier using a collection of decision trees. This classifier will create
+     *  a model for predicting the "class" (i.e. iris type) of a flower based on its measurements
      */
     val indexer = new StringIndexer()
       .setInputCol(irisColumnName)
@@ -61,13 +64,14 @@ object Main {
     // Create our model with the training-set of data
     val model = pipeline.fit(trainingData)
     
-    // Test the model against our test-set of data
+    // Use the model with our test-set of data
     val testResults = model.transform(testData)
     
     /*
-     * Determine how well we've done. Our model has added the columns
+     * Determine how well we've done. Our model has added the columns:
      * - 'probability' a probability vector showing the odds the given row is for type iris_i for 
-     *    all i. e.g. [0.0, 0.4, 0.6] (when translates to 0% iris_0.0, 40% iris_1.0, 60% iris_2.0)
+     *    all i. e.g. [0.0, 0.4, 0.6] which translates to 0% chance it is iris_0.0, 40% chance it
+     *    is iris_1.0, 60% chance it is iris_2.0
      * - 'prediction' the label for the iris type that our model believes this row should be classified as. e.g. 2.0
      */
     val predAndLabels = testResults
