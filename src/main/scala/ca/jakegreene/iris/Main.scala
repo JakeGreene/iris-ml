@@ -19,43 +19,62 @@ object Main {
     import sqlContext.implicits._
     
     /*
-     * Data should be in the format:
-     * Each line:
-     * 1. sepal length in cm
-     * 2. sepal width in cm
-     * 3. petal length in cm
-     * 4. petal width in cm
-     * 5. class 
+     * iris.data is a collection of data collected by R.A. Fisher. It has measurements of various iris flowers
+     * and is widely used by beginner statistics and machine-learning problems
      * 
+     * iris.data is a CSV file with no header in the format:
+     * sepal length in cm, sepal width in cm, petal length in cm, petal width in cm, iris type
+     * 
+     * Example:
+     * 5.1,3.5,1.4,0.2,Iris-setosa
      */
     val irisData = sc.textFile("src/main/resources/iris.data").flatMap(_.split("\n").toList.map(_.split(",")).collect {
       case Array(sepalLength, sepalWidth, petaLength, petalWidth, irisType) =>
         (Vectors.dense(sepalLength.toDouble, sepalWidth.toDouble, petaLength.toDouble, petalWidth.toDouble), irisType)
     })
-    // The ML pipeline requires that the data to be used is in a vector titled "features" and that the classifier is titled "label"
-    val irisDataFrame = sqlContext.createDataFrame(irisData).toDF("features", "irisType")
+    val irisColumnName = "iris-type"
+    // The ML pipeline requires that the features used for learning are in a vector titled "features"
+    val irisDataFrame = sqlContext.createDataFrame(irisData).toDF("features", irisColumnName)
     val (trainingData, testData) = {
       // Experiment with adjusting the size of the training set vs the test set
       val split = irisDataFrame.randomSplit(Array(0.8, 0.2))
       (split(0), split(1))
     }
     
-    // Given String classes. These need to be indexed in order to work with the classifier
+    /*  Build the Pipeline
+     *  
+     *  StringIndexer:
+     *  The iris types are all Strings. These need to be indexed (i.e. turned into unique doubles)
+     *  in order to work with a classifier. e.g. "Iris-setosa" might become 1.0
+     *  
+     *  RandomForestClassifier:
+     *  A multiclass classifier using a collection of decision trees.
+     */
     val indexer = new StringIndexer()
-      .setInputCol("irisType")
+      .setInputCol(irisColumnName)
       .setOutputCol("label")
+    // Classifiers look for the feature vectors under "features" and their labels under "label"
     val classifier = new RandomForestClassifier()
     val pipeline = new Pipeline()
       .setStages(Array(indexer, classifier))
       
+    // Create our model with the training-set of data
     val model = pipeline.fit(trainingData)
-    val predAndLabels = model.transform(testData)
+    
+    // Test the model against our test-set of data
+    val testResults = model.transform(testData)
+    
+    /*
+     * Determine how well we've done. Our model has added the columns
+     * - 'probability' a probability vector showing the odds the given row is for type iris_i for 
+     *    all i. e.g. [0.0, 0.4, 0.6] (when translates to 0% iris_0.0, 40% iris_1.0, 60% iris_2.0)
+     * - 'prediction' the label for the iris type that our model believes this row should be classified as. e.g. 2.0
+     */
+    val predAndLabels = testResults
         .select("prediction", "label")
         .map { case Row(prediction: Double, label: Double) => 
           (prediction, label)
         }
-    
-    // Determine how well we've done
     val metrics = new MulticlassMetrics(predAndLabels)
     println(s"Precision ${metrics.precision}")
     println(s"Recall ${metrics.recall}")
