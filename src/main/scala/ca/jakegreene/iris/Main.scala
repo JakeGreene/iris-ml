@@ -1,14 +1,18 @@
 package ca.jakegreene.iris
 
+import scala.reflect.runtime.universe
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.Row
-import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.RandomForestClassifier
 import org.apache.spark.ml.feature.StringIndexer
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.ml.tuning.TrainValidationSplit
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -52,6 +56,8 @@ object Main {
      *  RandomForestClassifier:
      *  A multiclass classifier using a collection of decision trees. This classifier will create
      *  a model for predicting the "class" (i.e. iris type) of a flower based on its measurements
+     *  
+     *  Pipelie: Indexer -> Classifier
      */
     val indexer = new StringIndexer()
       .setInputCol(irisColumnName)
@@ -61,14 +67,32 @@ object Main {
     val pipeline = new Pipeline()
       .setStages(Array(indexer, classifier))
       
+    /*
+     * There are a large number of "hyper" parameters that we can change to tune the accuracy
+     * of our classifier. Instead of manually testing them, we can build a grid of parameters
+     * and use a `TrainValidationSplit` to test the effectiveness of each combination
+     */
+    val paramGrid = new ParamGridBuilder()
+      .addGrid(classifier.maxDepth, Array(2, 5, 10))
+      .addGrid(classifier.numTrees, Array(10, 20, 40))
+      .addGrid(classifier.impurity, Array("gini", "entropy"))
+      .build()
+    
+    val trainValidationSplit = new TrainValidationSplit()
+      .setEstimator(pipeline)
+      .setEvaluator(new MulticlassClassificationEvaluator())
+      .setEstimatorParamMaps(paramGrid)
+      // Use 80% of the data to train and 20% to validate
+      .setTrainRatio(0.8)
+    
     // Create our model with the training-set of data
-    val model = pipeline.fit(trainingData)
+    val model = trainValidationSplit.fit(trainingData)
     
     // Use the model with our test-set of data
     val testResults = model.transform(testData)
     
     /*
-     * Determine how well we've done. Our model has added the columns:
+     * Test the model. Our model has added the columns:
      * - 'probability' a probability vector showing the odds the given row is for type iris_i for 
      *    all i. e.g. [0.0, 0.4, 0.6] which translates to 0% chance it is iris_0.0, 40% chance it
      *    is iris_1.0, 60% chance it is iris_2.0
