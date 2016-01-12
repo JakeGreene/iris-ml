@@ -14,7 +14,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.ml.tuning.TrainValidationSplit
 
-object Main {
+object IrisClassification {
   def main(args: Array[String]): Unit = {
     
     val conf = new SparkConf(true).setAppName("iris-ml")
