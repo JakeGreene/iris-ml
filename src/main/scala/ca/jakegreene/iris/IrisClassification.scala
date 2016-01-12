@@ -14,6 +14,9 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.ml.tuning.TrainValidationSplit
 
+/**
+ * IrisClassification is a simple example of Classification using Apache Spark's machine learning pipeline
+ */
 object IrisClassification {
   def main(args: Array[String]): Unit = {
     
@@ -24,9 +27,9 @@ object IrisClassification {
     
     /*
      * iris.data is a collection of data collected by R.A. Fisher. It has measurements of various iris flowers
-     * and is widely used by beginner statistics and machine-learning problems
+     * and is widely used for beginner statistics and machine-learning problems.
      * 
-     * iris.data is a CSV file with no header in the format:
+     * iris.data is a CSV file with no header. The data is in the format:
      * sepal length in cm, sepal width in cm, petal length in cm, petal width in cm, iris type
      * 
      * Example:
@@ -57,7 +60,7 @@ object IrisClassification {
      *  A multiclass classifier using a collection of decision trees. This classifier will create
      *  a model for predicting the "class" (i.e. iris type) of a flower based on its measurements
      *  
-     *  Pipelie: Indexer -> Classifier
+     *  Pipeline: Indexer -> Classifier
      */
     val indexer = new StringIndexer()
       .setInputCol(irisColumnName)
@@ -92,11 +95,15 @@ object IrisClassification {
     val testResults = model.transform(testData)
     
     /*
-     * Test the model. Our model has added the columns:
-     * - 'probability' a probability vector showing the odds the given row is for type iris_i for 
-     *    all i. e.g. [0.0, 0.4, 0.6] which translates to 0% chance it is iris_0.0, 40% chance it
+     * Review the test. Our model has added the following columns:
+     * - 'probability' a probability vector showing the odds the given flower is iris type iris_i for
+     *    all i. e.g. [0.0, 0.4, 0.6] translates to 0% chance it is iris_0.0, 40% chance it
      *    is iris_1.0, 60% chance it is iris_2.0
-     * - 'prediction' the label for the iris type that our model believes this row should be classified as. e.g. 2.0
+     * - 'prediction' the label for the iris type that our model believes this row should be classified
+     *    as. e.g. 2.0
+     *    
+     * We can compare the predicted label in `prediction` to the actual label in `label` to see how well
+     * we did. A more advanced system might ignore predictions with a low probability in the `probability` vector
      */
     val predAndLabels = testResults
         .select("prediction", "label")
