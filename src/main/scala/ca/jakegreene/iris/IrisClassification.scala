@@ -37,8 +37,8 @@ object IrisClassification {
      */
     val irisData = sc.textFile("src/main/resources/iris.data").flatMap { text =>
       text.split("\n").toList.map(_.split(",")).collect {
-        case Array(sepalLength, sepalWidth, petaLength, petalWidth, irisType) =>
-          (Vectors.dense(sepalLength.toDouble, sepalWidth.toDouble, petaLength.toDouble, petalWidth.toDouble), irisType)
+        case Array(sepalLength, sepalWidth, petalLength, petalWidth, irisType) =>
+          (Vectors.dense(sepalLength.toDouble, sepalWidth.toDouble, petalLength.toDouble, petalWidth.toDouble), irisType)
       }
     }
     val irisColumnName = "iris-type"
