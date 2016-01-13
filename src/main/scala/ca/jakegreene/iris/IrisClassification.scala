@@ -17,33 +17,15 @@ import org.apache.spark.ml.tuning.TrainValidationSplit
 /**
  * IrisClassification is a simple example of Classification using Apache Spark's machine learning pipeline
  */
-object IrisClassification {
+object IrisClassification extends DataLoader {
   def main(args: Array[String]): Unit = {
     
     val conf = new SparkConf(true).setAppName("iris-ml")
     val sc = new SparkContext(conf)
-    val sqlContext = new SQLContext(sc)
+    implicit val sqlContext = new SQLContext(sc)
     import sqlContext.implicits._
     
-    /*
-     * iris.data is a collection of data collected by R.A. Fisher. It has measurements of various iris flowers
-     * and is widely used for beginner statistics and machine-learning problems.
-     * 
-     * iris.data is a CSV file with no header. The data is in the format:
-     * sepal length in cm, sepal width in cm, petal length in cm, petal width in cm, iris type
-     * 
-     * Example:
-     * 5.1,3.5,1.4,0.2,Iris-setosa
-     */
-    val irisData = sc.textFile("src/main/resources/iris.data").flatMap { text =>
-      text.split("\n").toList.map(_.split(",")).collect {
-        case Array(sepalLength, sepalWidth, petalLength, petalWidth, irisType) =>
-          (Vectors.dense(sepalLength.toDouble, sepalWidth.toDouble, petalLength.toDouble, petalWidth.toDouble), irisType)
-      }
-    }
-    val irisColumnName = "iris-type"
-    // The ML pipeline requires that the features used for learning are in a vector titled "features"
-    val irisDataFrame = sqlContext.createDataFrame(irisData).toDF("features", irisColumnName)
+    val irisDataFrame = loadIris("src/main/resources/iris.data")
     val (trainingData, testData) = {
       // Experiment with adjusting the size of the training set vs the test set
       val split = irisDataFrame.randomSplit(Array(0.8, 0.2))
@@ -63,10 +45,10 @@ object IrisClassification {
      *  Pipeline: Indexer -> Classifier
      */
     val indexer = new StringIndexer()
-      .setInputCol(irisColumnName)
+      .setInputCol(irisTypeColumn)
       .setOutputCol("label")
-    // Classifiers look for the feature vectors under "features" and their labels under "label"
     val classifier = new RandomForestClassifier()
+      .setFeaturesCol(irisFeatureColumn)
     val pipeline = new Pipeline()
       .setStages(Array(indexer, classifier))
       
