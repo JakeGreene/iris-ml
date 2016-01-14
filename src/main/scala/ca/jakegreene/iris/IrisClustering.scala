@@ -54,29 +54,31 @@ object IrisClustering extends DataLoader {
     /*
      * Primary Question: Can KMeans accurately guess an iris' type without using the labels in training?
      * Hypothesis: Yes, the clusters created by KMeans will roughly align with the iris types
+     *
+     * This analysis makes the assumption that the majority of two or three iris types are not in a single cluster
      */
-    val predsAndTypes = predictions.select("prediction", irisTypeColumn).collect()
+    val predsAndTypes = predictions.select("prediction", irisTypeColumn).collect().toList
     predsAndTypes.foreach { case Row(prediction: Int, irisType: String) =>
       println(s"Assigned Cluster: $prediction\tIris Type: $irisType")
     }
     
-    val setosaAccuracy = accuracyOf("Iris-setosa", predsAndTypes.toList)
+    val setosaAccuracy = accuracyOf("Iris-setosa", predsAndTypes)
     println(s"Accuracy of iris setosa is ${setosaAccuracy * 100}")
-    val versicolorAccuracy = accuracyOf("Iris-versicolor", predsAndTypes.toList)
+    val versicolorAccuracy = accuracyOf("Iris-versicolor", predsAndTypes)
     println(s"Accuracy of iris versicolor is ${versicolorAccuracy * 100}")
-    val virginicasAccuracy = accuracyOf("Iris-virginica", predsAndTypes.toList)
+    val virginicasAccuracy = accuracyOf("Iris-virginica", predsAndTypes)
     println(s"Accuracy of iris virginicas is ${virginicasAccuracy * 100}")
     
     sc.stop()
   }
   
   /**
-   * Determine how close the iris type `irisType` matches with it's assigned cluster
+   * Determine how close the iris type `irisType` matches with its assigned cluster.
    */
   def accuracyOf(irisType: String, predsAndTypes: List[Row]): Double = {
-    val clusters = predsAndTypes
-      .toList
-      .collect { case Row(prediction: Int, iris: String) if iris == irisType => prediction }
+    val clusters = predsAndTypes.collect {
+      case Row(prediction: Int, iris: String) if iris == irisType => prediction
+    }
     val cluster = mostCommon(clusters)
     clusters.filter(_ == cluster).size / clusters.size.toDouble
   }
