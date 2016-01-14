@@ -17,5 +17,8 @@ To use this project, run the following commands after setting or substituting SP
 
 ```
 sbt clean assembly
+# The classification task
 ${SPARK_1_6_HOME}/bin/spark-submit --class ca.jakegreene.iris.IrisClassification --master spark://127.0.0.1:7077 target/scala-2.11/iris.jar 
+# The clustering task
+${SPARK_1_6_HOME}/bin/spark-submit --class ca.jakegreene.iris.IrisClustering --master spark://127.0.0.1:7077 target/scala-2.11/iris.jar
 ```

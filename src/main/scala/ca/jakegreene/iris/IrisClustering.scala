@@ -13,7 +13,7 @@ import org.apache.spark.sql.Row
  * IrisClustering is an experiment which uses clustering on iris data
  * and compares the clusters to the iris types.
  * 
- * Do the clusters align with the iris types?
+ * The primary question is: do the clusters align with the iris types?
  */
 object IrisClustering extends DataLoader {
   def main(args: Array[String]): Unit = {
@@ -29,18 +29,59 @@ object IrisClustering extends DataLoader {
       (split(0), split(1))
     }
     
-    val cluster = new KMeans()
+    /*
+     *  No need for a pipeline here. KMeans will look at the feature vector and cluster (or "lump") the
+     *  data into `K` groups (here we have chosen 3 groups) based on how similar their properties are.
+     *  
+     *  An important point: KMeans does not look at the labels i.e. it is an unsupervised learning
+     *  algorithm. This is very useful if we have unlabeled data and we are looking to find related data
+     *  e.g. given a document, find related documents.
+     */
+    val kmeans = new KMeans()
       .setK(3)
       .setFeaturesCol(irisFeatureColumn)
-      
-    val model = cluster.fit(trainingData)
+    
+    // Create 3 clusters based on our training data
+    val model = kmeans.fit(trainingData)
+    
+    /*
+     *  For each flower in the test data, determine which cluster it should belong to.
+     *  An iris will be assigned to a cluster based on which flowers in the training data
+     *  it most closely resembles
+     */
     val predictions = model.transform(testData)
     
-    predictions
-      .select("prediction", irisTypeColumn)
-      .collect()
-      .foreach { case Row(prediction: Int, irisType: String) => 
-        println(s"Assigned Cluster: $prediction \tIris Type: $irisType")
-      }
-  }  
+    /*
+     * Primary Question: Can KMeans accurately guess an iris' type without using the labels in training?
+     * Hypothesis: Yes, the clusters created by KMeans will roughly align with the iris types
+     */
+    val predsAndTypes = predictions.select("prediction", irisTypeColumn).collect()
+    predsAndTypes.foreach { case Row(prediction: Int, irisType: String) =>
+      println(s"Assigned Cluster: $prediction\tIris Type: $irisType")
+    }
+    
+    val setosaAccuracy = accuracyOf("Iris-setosa", predsAndTypes.toList)
+    println(s"Accuracy of iris setosa is ${setosaAccuracy * 100}")
+    val versicolorAccuracy = accuracyOf("Iris-versicolor", predsAndTypes.toList)
+    println(s"Accuracy of iris versicolor is ${versicolorAccuracy * 100}")
+    val virginicasAccuracy = accuracyOf("Iris-virginica", predsAndTypes.toList)
+    println(s"Accuracy of iris virginicas is ${virginicasAccuracy * 100}")
+    
+    sc.stop()
+  }
+  
+  /**
+   * Determine how close the iris type `irisType` matches with it's assigned cluster
+   */
+  def accuracyOf(irisType: String, predsAndTypes: List[Row]): Double = {
+    val clusters = predsAndTypes
+      .toList
+      .collect { case Row(prediction: Int, iris: String) if iris == irisType => prediction }
+    val cluster = mostCommon(clusters)
+    clusters.filter(_ == cluster).size / clusters.size.toDouble
+  }
+  
+  def mostCommon[A](l: List[A]): A = {
+    l.groupBy(identity).mapValues(_.size).maxBy(_._2)._1
+  }
 }

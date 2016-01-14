@@ -21,7 +21,7 @@ trait DataLoader {
    * Example:
    * 5.1,3.5,1.4,0.2,Iris-setosa
    * 
-   * @return a Dataframe with two columns. `irisFeatureColumn` contains the feature `Vector`s and `irisTypeColumn` contains the `Sting` iris types
+   * @return a Dataframe with two columns. `irisFeatureColumn` contains the feature `Vector`s and `irisTypeColumn` contains the `String` iris types
    */
   def loadIris(filePath: String)(implicit sqlContext: SQLContext): DataFrame = {
     val irisData = sqlContext.sparkContext.textFile(filePath).flatMap { text =>
