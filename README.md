@@ -6,7 +6,7 @@ A sample machine learning project using Apache Spark.
 Data
 ----
 
-I am using R.A. Fisher's famous "iris" dataset, a dataset that contains 150 entries with 3 classifiers.
+I am using R.A. Fisher's famous "iris" dataset, a dataset that contains 150 entries with 3 classes. A description of the data can be found [here](https://github.com/JakeGreene/iris-ml/blob/master/src/main/resources/iris.names)
 
 Usage
 -----
