@@ -16,13 +16,17 @@ import org.apache.spark.sql.Row
  * The primary question is: do the clusters align with the iris types?
  */
 object IrisClustering extends DataLoader {
+  /**
+   * Only expects a single arg
+   * arg(0) should have the path to the iris data
+   */
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf(true).setAppName("iris-ml")
     val sc = new SparkContext(conf)
     implicit val sqlContext = new SQLContext(sc)
     import sqlContext.implicits._
     
-    val irisDataFrame = loadIris("src/main/resources/iris.data")
+    val irisDataFrame = loadIris(args(0))
     val (trainingData, testData) = {
       // Experiment with adjusting the size of the training set vs the test set
       val split = irisDataFrame.randomSplit(Array(0.8, 0.2))
