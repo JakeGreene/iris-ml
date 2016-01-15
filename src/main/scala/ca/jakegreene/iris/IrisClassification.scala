@@ -25,7 +25,7 @@ object IrisClassification extends DataLoader {
    */
   def main(args: Array[String]): Unit = {
     
-    val conf = new SparkConf(true).setAppName("iris-ml")
+    val conf = new SparkConf(true).setAppName("iris-ml-classification")
     val sc = new SparkContext(conf)
     implicit val sqlContext = new SQLContext(sc)
     import sqlContext.implicits._

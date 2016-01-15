@@ -21,7 +21,7 @@ object IrisClustering extends DataLoader {
    * arg(0) should have the path to the iris data
    */
   def main(args: Array[String]): Unit = {
-    val conf = new SparkConf(true).setAppName("iris-ml")
+    val conf = new SparkConf(true).setAppName("iris-ml-clustering")
     val sc = new SparkContext(conf)
     implicit val sqlContext = new SQLContext(sc)
     import sqlContext.implicits._
