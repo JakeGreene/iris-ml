@@ -76,9 +76,11 @@ object IrisClassification extends DataLoader {
       .setTrainRatio(0.8)
     
     // Create our model with the training-set of data
+    trainingData.cache()
     val model = trainValidationSplit.fit(trainingData)
     
     // Use the model with our test-set of data
+    testData.cache()
     val testResults = model.transform(testData)
     
     /*

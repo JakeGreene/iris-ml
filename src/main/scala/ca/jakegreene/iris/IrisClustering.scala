@@ -46,6 +46,7 @@ object IrisClustering extends DataLoader {
       .setFeaturesCol(irisFeatureColumn)
     
     // Create 3 clusters based on our training data
+    trainingData.cache()
     val model = kmeans.fit(trainingData)
     
     /*
@@ -53,6 +54,7 @@ object IrisClustering extends DataLoader {
      *  An iris will be assigned to a cluster based on which flowers in the training data
      *  it most closely resembles
      */
+    testData.cache()
     val predictions = model.transform(testData)
     
     /*
